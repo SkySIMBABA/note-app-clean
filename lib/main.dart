@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_fonts/google_fonts.dart';
 import './services/note_service.dart';
 import './screens/home_page.dart';
 
@@ -37,7 +36,9 @@ class MyApp extends StatelessWidget {
             surface: const Color(0xFFF0F7FF), // A very light blue/white
             onSurface: Colors.black87,
           ),
-          textTheme: GoogleFonts.kiwiMaruTextTheme(Theme.of(context).textTheme),
+          textTheme: Theme.of(context).textTheme.apply(
+            fontFamily: 'SF Pro Display',
+          ),
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         home: const HomePage(),

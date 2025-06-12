@@ -183,165 +183,162 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true, // Center the title
       ),
       extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFFFCE4EC), // Light pink
-              const Color(0xFFE0F7FA), // Light cyan
-              const Color(0xFFFFF9C4), // Light yellow
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: kToolbarHeight + 24), // Increased space for a softer feel
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20), // Increased horizontal margin
-              padding: const EdgeInsets.all(18), // Increased padding
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.95), // Slightly more opaque
-                borderRadius: BorderRadius.circular(30), // More rounded corners
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08), // Softer shadow
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: _localized[_lang]!['search'],
-                      hintStyle: TextStyle(color: Colors.grey[500]), // Softer hint text
-                      prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary), // Themed icon
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(22), // More rounded search bar
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF8FDFE), // Very light fill color
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14), // Adjusted padding
-                    ),
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                  ),
-                ],
-              ),
+      body: Stack( // Use Stack to place image behind content
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png', // Your Totoro background image
+              fit: BoxFit.cover,
             ),
-            const SizedBox(height: 20), // Increased space before note list
-            Expanded(
-              child: filteredNotes.isEmpty
-                  ? Center(
-                      child: Text(
-                        _searchQuery.isNotEmpty
-                            ? _localized[_lang]!['no_search']!
-                            : _localized[_lang]!['no_notes']!,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.grey[600]), // Softer text style
+          ),
+          Column(
+            children: [
+              const SizedBox(height: kToolbarHeight + 24), // Increased space for a softer feel
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20), // Increased horizontal margin
+                padding: const EdgeInsets.all(18), // Increased padding
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.95), // Slightly more opaque
+                  borderRadius: BorderRadius.circular(30), // More rounded corners
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08), // Softer shadow
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: _localized[_lang]!['search'],
+                        hintStyle: TextStyle(color: Colors.grey[500]), // Softer hint text
+                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary), // Themed icon
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(22), // More rounded search bar
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FDFE), // Very light fill color
+                        contentPadding: const EdgeInsets.symmetric(vertical: 14), // Adjusted padding
                       ),
-                    )
-                  : GridView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), // Adjusted padding
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4, // Changed to 4 columns as requested
-                        crossAxisSpacing: 18, // Spacing between columns
-                        mainAxisSpacing: 18, // Spacing between rows
-                        childAspectRatio: 0.9, // Adjust aspect ratio for better card appearance
-                      ),
-                      itemCount: filteredNotes.length,
-                      itemBuilder: (context, index) {
-                        final note = filteredNotes[index];
-                        final total = ExpressionService.calculateTotal(note.content);
+                      onChanged: (value) => setState(() => _searchQuery = value),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20), // Increased space before note list
+              Expanded(
+                child: filteredNotes.isEmpty
+                    ? Center(
+                        child: Text(
+                          _searchQuery.isNotEmpty
+                              ? _localized[_lang]!['no_search']!
+                              : _localized[_lang]!['no_notes']!,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.grey[600]), // Softer text style
+                        ),
+                      )
+                    : GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), // Adjusted padding
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4, // Changed to 4 columns as requested
+                          crossAxisSpacing: 18, // Spacing between columns
+                          mainAxisSpacing: 18, // Spacing between rows
+                          childAspectRatio: 0.9, // Adjust aspect ratio for better card appearance
+                        ),
+                        itemCount: filteredNotes.length,
+                        itemBuilder: (context, index) {
+                          final note = filteredNotes[index];
+                          final total = ExpressionService.calculateTotal(note.content);
 
-                        return Card(
-                          margin: EdgeInsets.zero, // Removed margin as GridView handles spacing
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), // More rounded
-                          elevation: 6, // Slightly more pronounced shadow
-                          shadowColor: Colors.black.withOpacity(0.1),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(28),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => NotePage(note: note, lang: _lang),
-                              ),
-                            ).then((_) => setState(() {})),
-                            onLongPress: () {
-                              showModalBottomSheet(
-                                context: context,
-                                backgroundColor: Colors.white.withOpacity(0.95), // Themed bottom sheet
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+                          return Card(
+                            margin: EdgeInsets.zero, // Removed margin as GridView handles spacing
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), // More rounded
+                            elevation: 6, // Slightly more pronounced shadow
+                            shadowColor: Colors.black.withOpacity(0.1),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(28),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => NotePage(note: note, lang: _lang),
                                 ),
-                                builder: (context) => Wrap(
-                                  children: <Widget>[
-                                    ListTile(
-                                      leading: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary), // Themed icon
-                                      title: Text(_localized[_lang]!['rename_note']!),
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        _renameNote(note);
-                                      },
-                                    ),
-                                    ListTile(
-                                      leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error), // Themed icon for delete
-                                      title: Text(_localized[_lang]!['delete_note']!),
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        _deleteNote(note);
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(24), // Increased padding
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    note.name,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.onSurface,
-                                    ), // Larger and themed text
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                              ).then((_) => setState(() {})),
+                              onLongPress: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  backgroundColor: Colors.white.withOpacity(0.95), // Themed bottom sheet
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
                                   ),
-                                  if (note.content.isNotEmpty) ...[
-                                    const SizedBox(height: 6), // Adjusted spacing
-                                    Text(
-                                      note.content,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]), // Themed text
-                                    ),
-                                  ],
-                                  if (total > 0) ...[
-                                    const SizedBox(height: 8), // Spacing for total
-                                    Text(
-                                      '${_localized[_lang]!['total']!}: ${ExpressionService.formatNumber(total)}',
-                                      style: theme.textTheme.titleMedium?.copyWith(
-                                        color: theme.colorScheme.secondary, // Themed total color
-                                        fontWeight: FontWeight.bold,
+                                  builder: (context) => Wrap(
+                                    children: <Widget>[
+                                      ListTile(
+                                        leading: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary), // Themed icon
+                                        title: Text(_localized[_lang]!['rename_note']!),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          _renameNote(note);
+                                        },
                                       ),
+                                      ListTile(
+                                        leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error), // Themed icon for delete
+                                        title: Text(_localized[_lang]!['delete_note']!),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          _deleteNote(note);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(24), // Increased padding
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      note.name,
+                                      style: theme.textTheme.titleLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.onSurface,
+                                      ), // Larger and themed text
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
+                                    if (note.content.isNotEmpty) ...[
+                                      const SizedBox(height: 6), // Adjusted spacing
+                                      Text(
+                                        note.content,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]), // Themed text
+                                      ),
+                                    ],
+                                    if (total > 0) ...[
+                                      const SizedBox(height: 8), // Spacing for total
+                                      Text(
+                                        '${_localized[_lang]!['total']!}: ${ExpressionService.formatNumber(total)}',
+                                        style: theme.textTheme.titleMedium?.copyWith(
+                                          color: theme.colorScheme.secondary, // Themed total color
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
