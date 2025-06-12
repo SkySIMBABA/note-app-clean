@@ -12,10 +12,14 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   String _lang = 'zh';
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  late AnimationController _animationController;
+  late Animation<Offset> _animation;
+  late AnimationController _totoroAnimationController;
+  late Animation<Offset> _totoroAnimation;
 
   final Map<String, Map<String, String>> _localized = {
     'zh': {
@@ -57,6 +61,47 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800), // Slower animation
+    );
+    _animation = Tween<Offset>(
+      begin: const Offset(0, 0), // Start at original position
+      end: const Offset(0, -0.1), // Move up by 10% of height
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut)) // Smooth curve
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _animationController.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          _animationController.forward();
+        }
+      });
+    _animationController.forward(); // Start animation
+
+    _totoroAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700), // Slightly different speed
+    );
+    _totoroAnimation = Tween<Offset>(
+      begin: const Offset(0, 0), // Start at original position
+      end: const Offset(0, -0.05), // Move up slightly less
+    ).animate(CurvedAnimation(parent: _totoroAnimationController, curve: Curves.easeInOut)) // Smooth curve
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _totoroAnimationController.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          _totoroAnimationController.forward();
+        }
+      });
+    _totoroAnimationController.forward(); // Start animation
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _totoroAnimationController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _showLanguageDialog() {
@@ -154,33 +199,63 @@ class _HomePageState extends State<HomePage> {
         title: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFFCE4EC), // Light pink background
-            borderRadius: BorderRadius.circular(20),
+            color: Theme.of(context).colorScheme.secondary.withOpacity(0.5), // Lighter pink bubble background
+            borderRadius: BorderRadius.circular(25), // More rounded corners
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: Colors.black.withOpacity(0.08), // Softer shadow
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Text(
-            _localized[_lang]!['title']!,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Colors.black, // Text color set to black
-              fontWeight: FontWeight.bold,
-            ), // Apply new theme and font
+          child: Row(
+            mainAxisSize: MainAxisSize.min, // To wrap content
+            children: [
+              Text(
+                _localized[_lang]!['title']!,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface, // Text color set to onSurface
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 10), // Spacing between title and icon
+              SlideTransition(
+                position: _totoroAnimation,
+                child: Image.asset(
+                  'assets/images/totoro.png',
+                  width: 40, // Adjust size as needed
+                  height: 40,
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.language),
-            onPressed: _showLanguageDialog,
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0), // Add padding to the right
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondary.withOpacity(0.5), // Lighter pink bubble background
+                borderRadius: BorderRadius.circular(25), // More rounded corners
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08), // Softer shadow
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: Icon(Icons.language, color: Theme.of(context).colorScheme.onSecondary), // Themed icon color
+                onPressed: _showLanguageDialog,
+              ),
+            ),
           ),
         ],
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true, // Center the title
+        centerTitle: true,
       ),
       extendBodyBehindAppBar: true,
       body: Stack( // Use Stack to place image behind content
@@ -256,8 +331,8 @@ class _HomePageState extends State<HomePage> {
                           return Card(
                             margin: EdgeInsets.zero, // Removed margin as GridView handles spacing
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), // More rounded
-                            elevation: 6, // Slightly more pronounced shadow
-                            shadowColor: Colors.black.withOpacity(0.1),
+                            elevation: 8, // Slightly more pronounced shadow for bubble effect
+                            shadowColor: Colors.black.withOpacity(0.12), // Consistent shadow color
                             child: InkWell(
                               borderRadius: BorderRadius.circular(28),
                               onTap: () => Navigator.push(
@@ -340,25 +415,35 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final note = Note(
-            name: _localized[_lang]!['new_note']!,
-            category: null,
-          );
-          await context.read<NoteService>().addNote(note);
-          if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => NotePage(note: note, lang: _lang),
-              ),
+      floatingActionButton: SlideTransition(
+        position: _animation,
+        child: FloatingActionButton(
+          onPressed: () async {
+            final note = Note(
+              name: _localized[_lang]!['new_note']!,
+              category: null,
             );
-          }
-        },
-        backgroundColor: Theme.of(context).colorScheme.primary, // Themed FAB
-        child: const Icon(Icons.add, color: Colors.white),
-        elevation: 6, // Increased FAB elevation
+            await context.read<NoteService>().addNote(note);
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NotePage(note: note, lang: _lang),
+                ),
+              );
+            }
+          },
+          backgroundColor: Theme.of(context).colorScheme.primary, // Themed FAB
+          child: Image.asset(
+            'assets/images/leaf.png', // Your leaf image
+            width: 30, // Adjust size as needed
+            height: 30,
+          ),
+          elevation: 6, // Increased FAB elevation
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30.0), // Rounded corners for bubble effect
+          ),
+        ),
       ),
     );
   }

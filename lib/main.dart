@@ -28,12 +28,12 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF8FBC8F), // A soft green for a natural feel
-            primary: const Color(0xFF8FBC8F),
-            secondary: const Color(0xFFADD8E6), // A light blue
+            seedColor: const Color(0xFFF48FB1), // Soft pink
+            primary: const Color(0xFFF48FB1), // Primary pink
+            secondary: const Color(0xFFF8BBD0), // Lighter pink
             onPrimary: Colors.white,
             onSecondary: Colors.black,
-            surface: const Color(0xFFF0F7FF), // A very light blue/white
+            surface: const Color(0xFFFFF0F5), // Very light pink/white
             onSurface: Colors.black87,
           ),
           textTheme: Theme.of(context).textTheme.apply(
