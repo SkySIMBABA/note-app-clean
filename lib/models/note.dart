@@ -9,17 +9,20 @@ class Note {
   List<String> tags;
   bool isPinned;
   String? category;
+  String icon;
 
   Note({
     String? id,
     required this.name,
     this.content = '',
+    String? icon,
     DateTime? createdAt,
     DateTime? modifiedAt,
     List<String>? tags,
     this.isPinned = false,
     this.category,
   })  : id = id ?? const Uuid().v4(),
+        icon = icon ?? '📝',
         createdAt = createdAt ?? DateTime.now(),
         modifiedAt = modifiedAt ?? DateTime.now(),
         tags = tags ?? [];
@@ -65,6 +68,7 @@ class Note {
         'tags': tags,
         'isPinned': isPinned,
         'category': category,
+        'icon': icon,
       };
 
   factory Note.fromJson(Map<String, dynamic> json) => Note(
@@ -76,5 +80,6 @@ class Note {
         tags: List<String>.from(json['tags'] as List),
         isPinned: json['isPinned'] as bool,
         category: json['category'] as String?,
+        icon: json['icon'] as String?,
       );
 } 

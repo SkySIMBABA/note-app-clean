@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui';
+import 'dart:math' as math;
 import '../models/note.dart';
 import '../services/note_service.dart';
-import '../services/expression_service.dart';
+import '../widgets/note_card.dart';
+import '../widgets/search_bar_widget.dart';
+import '../widgets/language_selector.dart';
+import '../widgets/tag_selector.dart';
+import '../widgets/totoro_background.dart';
 import 'note_page.dart';
+import '../app_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,438 +20,343 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  String _lang = 'zh';
   String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-  late AnimationController _animationController;
-  late Animation<Offset> _animation;
-  late AnimationController _totoroAnimationController;
-  late Animation<Offset> _totoroAnimation;
+  String? _selectedTag;
+  late AnimationController _fabAnimationController;
+  late AnimationController _headerAnimationController;
+  late Animation<double> _fabAnimation;
+  late Animation<double> _headerAnimation;
 
   final Map<String, Map<String, String>> _localized = {
     'zh': {
-      'title': '朵朵计算',
+      'title': '朵朵笔记',
       'search': '搜索笔记...',
-      'new_note': '新笔记',
-      'change_bg': '更换背景',
-      'select_lang': '选择语言',
-      'no_notes': '暂无笔记，点击右下角 + 创建',
-      'no_search': '没有找到匹配的笔记',
-      'rename_note': '重命名笔记',
-      'note_name_hint': '请输入新的笔记名称',
-      'cancel': '取消',
-      'rename': '重命名',
-      'delete_note': '删除笔记',
-      'delete_confirm': '确定要删除这个笔记吗？',
-      'delete': '删除',
+      'newNote': '新笔记',
+      'noNotes': '没有笔记，点击 + 创建',
+      'noSearch': '没有找到匹配的笔记',
       'total': '总计',
+      'settings': '设置',
     },
     'en': {
-      'title': 'Cloud Calculator',
+      'title': 'DUODUO Note',
       'search': 'Search notes...',
-      'new_note': 'New Note',
-      'change_bg': 'Change Background',
-      'select_lang': 'Select Language',
-      'no_notes': 'No notes found, click the + button to create a new one',
-      'no_search': 'No notes found matching the search',
-      'rename_note': 'Rename Note',
-      'note_name_hint': 'Enter new note name',
-      'cancel': 'Cancel',
-      'rename': 'Rename',
-      'delete_note': 'Delete Note',
-      'delete_confirm': 'Are you sure you want to delete this note?',
-      'delete': 'Delete',
+      'newNote': 'New Note',
+      'noNotes': 'No notes yet, tap + to create',
+      'noSearch': 'No matching notes found',
       'total': 'Total',
+      'settings': 'Settings',
     },
   };
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _fabAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
       vsync: this,
-      duration: const Duration(milliseconds: 800), // Slower animation
     );
-    _animation = Tween<Offset>(
-      begin: const Offset(0, 0), // Start at original position
-      end: const Offset(0, -0.1), // Move up by 10% of height
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut)) // Smooth curve
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _animationController.reverse();
-        } else if (status == AnimationStatus.dismissed) {
-          _animationController.forward();
-        }
-      });
-    _animationController.forward(); // Start animation
-
-    _totoroAnimationController = AnimationController(
+    _headerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
-      duration: const Duration(milliseconds: 700), // Slightly different speed
     );
-    _totoroAnimation = Tween<Offset>(
-      begin: const Offset(0, 0), // Start at original position
-      end: const Offset(0, -0.05), // Move up slightly less
-    ).animate(CurvedAnimation(parent: _totoroAnimationController, curve: Curves.easeInOut)) // Smooth curve
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _totoroAnimationController.reverse();
-        } else if (status == AnimationStatus.dismissed) {
-          _totoroAnimationController.forward();
-        }
-      });
-    _totoroAnimationController.forward(); // Start animation
+    
+    _fabAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _fabAnimationController, curve: Curves.easeInOut),
+    );
+    
+    _headerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _headerAnimationController, curve: Curves.easeOutBack),
+    );
+    
+    // Start header animation
+    _headerAnimationController.forward();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
-    _totoroAnimationController.dispose();
-    _searchController.dispose();
+    _fabAnimationController.dispose();
+    _headerAnimationController.dispose();
     super.dispose();
   }
 
-  void _showLanguageDialog() {
-    showDialog(
+  void _createNewNote() {
+    // Show icon picker before creating
+    _pickIcon().then((icon) {
+      final noteService = Provider.of<NoteService>(context, listen: false);
+      final newNote = Note(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: _localized['zh']!['newNote']!,
+        content: '',
+        icon: icon ?? '📝',
+      );
+      noteService.addNote(newNote);
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => NotePage(note: newNote),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const curve = Curves.easeInOutCubic;
+            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            return SlideTransition(position: animation.drive(tween), child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    });
+  }
+
+  Future<String?> _pickIcon() {
+    const icons = ['📝','🍽️','🛍️','✈️','💼','💭'];
+    return showModalBottomSheet<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(_localized[_lang]!['select_lang']!),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('简体中文'),
-              onTap: () => setState(() {
-                _lang = 'zh';
-                                Navigator.pop(context);
-              }),
-            ),
-            ListTile(
-              title: const Text('English'),
-              onTap: () => setState(() {
-                _lang = 'en';
-                                Navigator.pop(context);
-              }),
-            ),
-          ],
+      builder: (ctx) => SizedBox(
+        height: 200,
+        child: GridView.count(
+          crossAxisCount: 4,
+          children: icons.map((icon) {
+            return GestureDetector(
+              onTap: () => Navigator.pop(ctx, icon),
+              child: Center(child: Text(icon, style: const TextStyle(fontSize: 32))),
+            );
+          }).toList(),
         ),
       ),
     );
-  }
-
-  Future<void> _renameNote(Note note) async {
-    final nameController = TextEditingController(text: note.name);
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(_localized[_lang]!['rename_note']!),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          decoration: InputDecoration(hintText: _localized[_lang]!['note_name_hint']),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(_localized[_lang]!['cancel']!)),
-          TextButton(
-            onPressed: () => Navigator.pop(context, nameController.text),
-            child: Text(_localized[_lang]!['rename']!),
-          ),
-        ],
-      ),
-    );
-
-    if (newName != null && newName.isNotEmpty) {
-      note.name = newName;
-      await context.read<NoteService>().updateNote(note);
-    }
-  }
-
-  Future<void> _deleteNote(Note note) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(_localized[_lang]!['delete_note']!),
-        content: Text(_localized[_lang]!['delete_confirm']!),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(_localized[_lang]!['cancel']!),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(_localized[_lang]!['delete']!),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await context.read<NoteService>().deleteNote(note.id);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final noteService = Provider.of<NoteService>(context);
     final notes = noteService.notes;
+    final appState = Provider.of<AppState>(context);
+    final lang = appState.lang;
 
     final filteredNotes = notes.where((note) {
       final matchesSearch = note.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          note.content.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesSearch;
+             note.content.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesTag = _selectedTag == null || note.tags.contains(_selectedTag);
+      return matchesSearch && matchesTag;
     }).toList();
+    // Sort so pinned notes appear first
+    filteredNotes.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondary.withOpacity(0.5), // Lighter pink bubble background
-            borderRadius: BorderRadius.circular(25), // More rounded corners
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08), // Softer shadow
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min, // To wrap content
-            children: [
-              Text(
-                _localized[_lang]!['title']!,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface, // Text color set to onSurface
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 10), // Spacing between title and icon
-              SlideTransition(
-                position: _totoroAnimation,
-                child: Image.asset(
-                  'assets/images/totoro.png',
-                  width: 40, // Adjust size as needed
-                  height: 40,
-                ),
-              ),
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark ? [
+              const Color(0xFF831843),
+              const Color(0xFF7C2D12),
+              const Color(0xFF831843),
+            ] : [
+              const Color(0xFFFDF2F8),
+              const Color(0xFFFCE4EC),
+              const Color(0xFFFDF2F8),
             ],
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0), // Add padding to the right
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondary.withOpacity(0.5), // Lighter pink bubble background
-                borderRadius: BorderRadius.circular(25), // More rounded corners
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08), // Softer shadow
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+        child: Stack(
+          children: [
+            // Animated background
+            const TotoroBackground(),
+            
+            // Main content
+            SafeArea(
+              child: Column(
+                children: [
+                  // Animated header
+                  AnimatedBuilder(
+                    animation: _headerAnimation,
+                    child: Opacity(
+                      opacity: _headerAnimation.value.clamp(0.0, 1.0),
+                      child: Container(
+                        margin: const EdgeInsets.all(20),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(32),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                            child: Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.pink.shade900.withOpacity(0.2)
+                                    : Colors.pink.shade50.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(32),
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.pink.shade800.withOpacity(0.2)
+                                      : Colors.pink.shade200.withOpacity(0.6),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: isDark
+                                        ? Colors.black.withOpacity(0.2)
+                                        : Colors.pink.shade100.withOpacity(0.2),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  // Title and controls
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: Colors.transparent,
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Image.asset('assets/images/totoro.png', height: 36),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          ShaderMask(
+                                            shaderCallback: (bounds) => LinearGradient(
+                                              colors: isDark ? [Colors.white, Colors.pink.shade200] : [Colors.pink.shade700, Colors.pink.shade500],
+                                            ).createShader(bounds),
+                                            child: Text(_localized[lang]!['title']!, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                                          ),
+                                        ],
+                                      ),
+                                      LanguageSelector(
+                                        currentLang: lang,
+                                        onLanguageChanged: (newLang){
+                                          if (newLang != lang) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(newLang == 'zh' ? '已切换为中文' : 'Switched to English'),
+                                                duration: Duration(milliseconds: 800),
+                                              ),
+                                            );
+                                            appState.setLang(newLang);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Column(
+                                    children: [
+                                      SearchBarWidget(value: _searchQuery, onChanged: (val) => setState(() => _searchQuery = val), placeholder: _localized[lang]!['search']!),
+                                      const SizedBox(height: 12),
+                                      TagSelector(
+                                        tags: noteService.getAllTags(),
+                                        selectedTag: _selectedTag,
+                                        onTagSelected: (tag) => setState(() => _selectedTag = tag),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    builder: (context, child) {
+                      return Transform.translate(
+                        offset: Offset(0, -50 * (1 - _headerAnimation.value)),
+                        child: child!,
+                      );
+                    },
+                  ),
+                  Expanded(child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: filteredNotes.isEmpty ? _buildEmptyState(isDark) : _buildNotesGrid(filteredNotes, isDark),
+                    ),
                   ),
                 ],
               ),
-              child: IconButton(
-                icon: Icon(Icons.language, color: Theme.of(context).colorScheme.onSecondary), // Themed icon color
-                onPressed: _showLanguageDialog,
-              ),
             ),
-          ),
-        ],
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      extendBodyBehindAppBar: true,
-      body: Stack( // Use Stack to place image behind content
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/background.png', // Your Totoro background image
-              fit: BoxFit.cover,
-            ),
-          ),
-          Column(
-            children: [
-              const SizedBox(height: kToolbarHeight + 24), // Increased space for a softer feel
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20), // Increased horizontal margin
-                padding: const EdgeInsets.all(18), // Increased padding
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95), // Slightly more opaque
-                  borderRadius: BorderRadius.circular(30), // More rounded corners
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08), // Softer shadow
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: _localized[_lang]!['search'],
-                        hintStyle: TextStyle(color: Colors.grey[500]), // Softer hint text
-                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary), // Themed icon
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(22), // More rounded search bar
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FDFE), // Very light fill color
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14), // Adjusted padding
-                      ),
-                      onChanged: (value) => setState(() => _searchQuery = value),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20), // Increased space before note list
-              Expanded(
-                child: filteredNotes.isEmpty
-                    ? Center(
-                        child: Text(
-                          _searchQuery.isNotEmpty
-                              ? _localized[_lang]!['no_search']!
-                              : _localized[_lang]!['no_notes']!,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.grey[600]), // Softer text style
-                        ),
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), // Adjusted padding
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4, // Changed to 4 columns as requested
-                          crossAxisSpacing: 18, // Spacing between columns
-                          mainAxisSpacing: 18, // Spacing between rows
-                          childAspectRatio: 0.9, // Adjust aspect ratio for better card appearance
-                        ),
-                        itemCount: filteredNotes.length,
-                        itemBuilder: (context, index) {
-                          final note = filteredNotes[index];
-                          final total = ExpressionService.calculateTotal(note.content);
-
-                          return Card(
-                            margin: EdgeInsets.zero, // Removed margin as GridView handles spacing
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), // More rounded
-                            elevation: 8, // Slightly more pronounced shadow for bubble effect
-                            shadowColor: Colors.black.withOpacity(0.12), // Consistent shadow color
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(28),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => NotePage(note: note, lang: _lang),
-                                ),
-                              ).then((_) => setState(() {})),
-                              onLongPress: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  backgroundColor: Colors.white.withOpacity(0.95), // Themed bottom sheet
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-                                  ),
-                                  builder: (context) => Wrap(
-                                    children: <Widget>[
-                                      ListTile(
-                                        leading: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary), // Themed icon
-                                        title: Text(_localized[_lang]!['rename_note']!),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                          _renameNote(note);
-                                        },
-                                      ),
-                                      ListTile(
-                                        leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error), // Themed icon for delete
-                                        title: Text(_localized[_lang]!['delete_note']!),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                          _deleteNote(note);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.all(24), // Increased padding
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      note.name,
-                                      style: theme.textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: theme.colorScheme.onSurface,
-                                      ), // Larger and themed text
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (note.content.isNotEmpty) ...[
-                                      const SizedBox(height: 6), // Adjusted spacing
-                                      Text(
-                                        note.content,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]), // Themed text
-                                      ),
-                                    ],
-                                    if (total > 0) ...[
-                                      const SizedBox(height: 8), // Spacing for total
-                                      Text(
-                                        '${_localized[_lang]!['total']!}: ${ExpressionService.formatNumber(total)}',
-                                        style: theme.textTheme.titleMedium?.copyWith(
-                                          color: theme.colorScheme.secondary, // Themed total color
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      floatingActionButton: SlideTransition(
-        position: _animation,
-        child: FloatingActionButton(
-          onPressed: () async {
-            final note = Note(
-              name: _localized[_lang]!['new_note']!,
-              category: null,
-            );
-            await context.read<NoteService>().addNote(note);
-            if (mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => NotePage(note: note, lang: _lang),
-                ),
-              );
-            }
-          },
-          backgroundColor: Theme.of(context).colorScheme.primary, // Themed FAB
-          child: Image.asset(
-            'assets/images/leaf.png', // Your leaf image
-            width: 30, // Adjust size as needed
-            height: 30,
-          ),
-          elevation: 6, // Increased FAB elevation
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30.0), // Rounded corners for bubble effect
-          ),
+          ],
         ),
       ),
+      floatingActionButton: AnimatedBuilder(
+        animation: _fabAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _fabAnimation.value,
+            child: FloatingActionButton(
+              onPressed: () {
+                _fabAnimationController.forward().then((_) {
+                  _fabAnimationController.reverse();
+                });
+                _createNewNote();
+              },
+              backgroundColor: isDark ? Colors.pink.shade400 : Colors.pink.shade600,
+              child: Image.asset('assets/images/leaf.png', height: 28),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    final appState = Provider.of<AppState>(context);
+    final lang = appState.lang;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.note_alt,
+            size: 64,
+            color: isDark ? Colors.pink.shade300 : Colors.pink.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _localized[lang]!['noNotes']!,
+            style: TextStyle(
+              fontSize: 18,
+              color: isDark ? Colors.white : Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesGrid(List<Note> notes, bool isDark) {
+    final appState = Provider.of<AppState>(context);
+    final lang = appState.lang;
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: notes.length,
+      itemBuilder: (context, index) {
+        final note = notes[index];
+        return NoteCard(
+          note: note,
+          lang: lang,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => NotePage(note: note),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 } 
