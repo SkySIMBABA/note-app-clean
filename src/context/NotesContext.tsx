@@ -12,6 +12,7 @@ interface NotesContextType {
   addNote: () => void;
   updateNote: (id: string, updated: Note) => void;
   deleteNote: (id: string) => void;
+  reorderNotes: (newOrder: Note[]) => void;
 }
 
 export const NotesContext = createContext<NotesContextType>({
@@ -19,6 +20,7 @@ export const NotesContext = createContext<NotesContextType>({
   addNote: () => {},
   updateNote: () => {},
   deleteNote: () => {},
+  reorderNotes: () => {},
 });
 
 export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -44,8 +46,12 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setNotes(notes.filter(n => n.id !== id));
   };
 
+  const reorderNotes = (newOrder: Note[]) => {
+    setNotes(newOrder);
+  };
+
   return (
-    <NotesContext.Provider value={{ notes, addNote, updateNote, deleteNote }}>
+    <NotesContext.Provider value={{ notes, addNote, updateNote, deleteNote, reorderNotes }}>
       {children}
     </NotesContext.Provider>
   );
