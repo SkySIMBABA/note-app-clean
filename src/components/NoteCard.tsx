@@ -1,6 +1,5 @@
 import React from 'react';
 import { Note } from '../context/NotesContext';
-import { calculateExpressions } from '../utils/calc';
 
 interface NoteCardProps {
   note: Note;
@@ -9,37 +8,83 @@ interface NoteCardProps {
 }
 
 export default function NoteCard({ note, selected, onClick }: NoteCardProps) {
-  // Calculate total sum for this note
   const results = calculateExpressions(note.content);
   const total = results.reduce((sum, r) => sum + r.result, 0);
 
   return (
-    <div className={`note-card${selected ? ' selected' : ''}`} onClick={onClick} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', minHeight: 80 }}>
-      <div style={{ flex: 1 }}>
-        <h3>{note.title}</h3>
-        {/* Show only total in the middle part if there are results */}
-        {results.length > 0 && (
-          <div style={{ fontWeight: 600, fontSize: '1.1em', marginTop: 8 }}>
-            Total: <span>{total}</span>
-          </div>
+    <div 
+      className={`note-card ${selected ? 'selected' : ''}`}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      aria-label={`Note: ${note.title}`}
+    >
+      <div className="note-card-content">
+        <h3>{note.title || 'Untitled'}</h3>
+        {note.content && (
+          <p style={{ 
+            margin: '8px 0', 
+            color: '#666', 
+            fontSize: '0.95rem',
+            lineHeight: '1.4',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
+          }}>
+            {note.content}
+          </p>
         )}
       </div>
-      {/* Details breakdown on the right */}
+      
+      {total > 0 && (
+        <div className="note-total">
+          ¥{total.toLocaleString()}
+        </div>
+      )}
+      
       {results.length > 0 && (
-        <div style={{ minWidth: 120, marginLeft: 16, borderLeft: '1px solid #eee', paddingLeft: 12, fontSize: '0.98em', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', width: '100%' }}>
-            {results.map((r, i) => (
-              <li key={i} style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: 2 }}>
-                <span style={{ color: '#888', marginRight: 8 }}>{r.expression}</span>
-                <span style={{ fontWeight: 500 }}>{r.result}</span>
+        <div className="note-card-details">
+          <ul>
+            {results.map((result, index) => (
+              <li key={index}>
+                <span>{result.expression}</span>
+                <span>{result.result}</span>
               </li>
             ))}
           </ul>
-          <div style={{ fontWeight: 600, fontSize: '1em', marginTop: 8, textAlign: 'right', width: '100%' }}>
-            Total: <span>{total}</span>
-          </div>
+          <div className="total">¥{total.toLocaleString()}</div>
         </div>
       )}
     </div>
   );
+}
+
+// Helper function to calculate expressions (moved from utils for simplicity)
+function calculateExpressions(content: string) {
+  const results: { expression: string; result: number }[] = [];
+  const lines = content.split('\n');
+  
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed.match(/^[\d+\-*/().\s]+$/)) {
+      try {
+        const result = eval(trimmed);
+        if (typeof result === 'number' && !isNaN(result)) {
+          results.push({ expression: trimmed, result });
+        }
+      } catch (e) {
+        // Invalid expression, skip
+      }
+    }
+  });
+  
+  return results;
 } 

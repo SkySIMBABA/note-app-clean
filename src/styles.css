@@ -1,4 +1,14 @@
-/* Apple Glass / Glassmorphism Modern UI Styles */
+/* Apple Glass / Glassmorphism Modern UI Styles - Mobile First */
+
+/* Prevent horizontal scroll on mobile */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
 
 body {
   font-family: 'Inter', 'San Francisco', system-ui, sans-serif;
@@ -8,6 +18,26 @@ body {
   margin: 0;
   padding: 0;
   transition: background 0.7s cubic-bezier(.4,0,.2,1);
+  overflow-x: hidden;
+  /* Safe area support for mobile devices */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Improve touch targets on mobile */
+button, input, textarea, select {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Disable text selection on buttons for better mobile experience */
+button {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 body.totoro-theme {
@@ -89,7 +119,139 @@ body.dark .falling-leaf {
   filter: brightness(0.85) contrast(1.1);
 }
 
+/* Mobile-first app layout */
 .app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100vw;
+  padding: 0;
+  box-sizing: border-box;
+  gap: 0;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+/* Mobile header */
+.mobile-header {
+  display: none;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(200,200,255,0.13);
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+  /* Safe area support */
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+
+.mobile-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mobile-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-totoro {
+  width: 40px;
+  height: 40px;
+  animation: totoro-sway 3s ease-in-out infinite;
+}
+
+.mobile-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #232946;
+  margin: 0;
+}
+
+.mobile-subtitle {
+  font-size: 0.9rem;
+  color: #5b7c3a;
+  margin: 0;
+}
+
+.mobile-controls {
+  display: flex;
+  gap: 8px;
+}
+
+/* Mobile navigation tabs */
+.mobile-tabs {
+  display: none;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(200,200,255,0.13);
+  padding: 0 20px;
+  position: sticky;
+  top: 80px;
+  z-index: 99;
+  /* Safe area support */
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+
+.mobile-tab {
+  flex: 1;
+  padding: 16px 12px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #666;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  min-height: 56px; /* Touch-friendly height */
+}
+
+.mobile-tab.active {
+  color: #7c3aed;
+  border-bottom-color: #7c3aed;
+}
+
+.mobile-tab:active {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+/* Mobile content areas */
+.mobile-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 20px;
+  overflow-y: auto;
+  /* Safe area support */
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+.mobile-notes-section,
+.mobile-editor-section {
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(18px);
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(200,200,255,0.13);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+/* Desktop layout (hidden on mobile) */
+.desktop-layout {
   display: flex;
   min-height: 100vh;
   width: 100vw;
@@ -141,7 +303,7 @@ main {
 .note-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .note-list button {
@@ -149,13 +311,14 @@ main {
   color: #232946;
   font-weight: 600;
   border: none;
-  border-radius: 18px;
-  padding: 12px 28px;
+  border-radius: 16px;
+  padding: 16px 24px;
   font-size: 1.1rem;
   margin-bottom: 12px;
   box-shadow: 0 2px 8px 0 rgba(31, 38, 135, 0.07);
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s;
+  min-height: 56px; /* Touch-friendly height */
 }
 
 .note-list button:hover {
@@ -163,19 +326,23 @@ main {
   box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.13);
 }
 
+.note-list button:active {
+  transform: scale(0.98);
+}
+
 .note-card {
   background: rgba(255,255,255,0.85);
-  border-radius: 24px;
+  border-radius: 20px;
   box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.10);
   border: 1.5px solid rgba(200,200,255,0.13);
-  padding: 28px 32px;
+  padding: 20px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  flex-direction: column;
+  gap: 16px;
   cursor: pointer;
   transition: box-shadow 0.2s, border 0.2s, background 0.2s;
   min-height: 80px;
+  position: relative;
 }
 
 .note-card.selected, .note-card:hover {
@@ -184,19 +351,25 @@ main {
   box-shadow: 0 8px 32px 0 rgba(245, 208, 254, 0.13);
 }
 
+.note-card:active {
+  transform: scale(0.98);
+}
+
 .note-card h3 {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
   color: #232946;
+  line-height: 1.3;
 }
 
 .note-card .note-total {
-  font-size: 2.1rem;
+  font-size: 1.8rem;
   font-weight: 800;
   color: #7c3aed;
   letter-spacing: -1px;
-  margin-top: 2px;
+  margin-top: 4px;
+  text-align: right;
 }
 
 /* Details breakdown on right */
@@ -244,18 +417,24 @@ main {
   background: rgba(255,255,255,0.7);
   border: none;
   border-radius: 14px;
-  padding: 14px 18px;
+  padding: 16px 20px;
   font-size: 1.1rem;
   margin-bottom: 18px;
   box-shadow: 0 2px 8px 0 rgba(31, 38, 135, 0.07);
   color: #232946;
   transition: box-shadow 0.2s, background 0.2s;
+  min-height: 56px; /* Touch-friendly height */
 }
 
 .note-title-input:focus, .note-content-input:focus {
   outline: none;
   background: #f5d0fe33;
   box-shadow: 0 4px 16px 0 rgba(245, 208, 254, 0.13);
+}
+
+.note-content-input {
+  min-height: 120px;
+  resize: vertical;
 }
 
 .delete-note-btn {
@@ -265,6 +444,8 @@ main {
   color: #7c3aed;
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s;
+  min-height: 48px; /* Touch-friendly height */
+  min-width: 48px;
 }
 
 .delete-note-btn:hover {
@@ -272,36 +453,140 @@ main {
   box-shadow: 0 4px 16px 0 rgba(245, 208, 254, 0.13);
 }
 
+.delete-note-btn:active {
+  transform: scale(0.95);
+}
+
 .theme-toggle-btn {
   background: rgba(245, 208, 254, 0.18);
   border: none;
-  border-radius: 18px;
-  padding: 10px 22px;
+  border-radius: 16px;
+  padding: 12px 20px;
   font-size: 1rem;
   font-weight: 600;
   color: #7c3aed;
   cursor: pointer;
   margin-top: 8px;
   transition: background 0.2s;
+  min-height: 48px; /* Touch-friendly height */
 }
 
 .theme-toggle-btn:hover {
   background: rgba(167, 243, 208, 0.18);
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .app-root {
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+/* Mobile responsive breakpoints */
+@media (max-width: 768px) {
+  .mobile-header,
+  .mobile-tabs,
+  .mobile-content {
+    display: block;
+  }
+  
+  .desktop-layout {
+    display: none;
+  }
+  
+  .mobile-notes-section,
+  .mobile-editor-section {
+    display: block;
+  }
+  
+  .note-card {
     flex-direction: column;
     align-items: stretch;
-    gap: 18px;
-    padding: 18px 0;
   }
+  
+  .note-card-details {
+    margin-left: 0;
+    border-left: none;
+    border-top: 1px solid #eee;
+    padding-left: 0;
+    padding-top: 12px;
+    align-items: flex-start;
+  }
+  
+  .note-card .note-total {
+    text-align: left;
+  }
+  
+  /* Improve mobile scrolling */
+  .mobile-content {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Better mobile input handling */
+  input, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-header,
+  .mobile-tabs,
+  .mobile-content {
+    display: none;
+  }
+  
+  .desktop-layout {
+    display: flex;
+  }
+  
+  .app-root {
+    flex-direction: row;
+    padding: 32px 0;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  
+  .note-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .note-card-details {
+    margin-left: 16px;
+    border-left: 1px solid #eee;
+    border-top: none;
+    padding-left: 12px;
+    padding-top: 0;
+    align-items: flex-end;
+  }
+  
+  .note-card .note-total {
+    text-align: right;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .app-root {
+    padding: 20px;
+    gap: 20px;
+  }
+  
   .sidebar, main {
-    max-width: 100vw;
-    width: 100vw;
-    border-radius: 18px;
-    padding: 24px 12px;
+    border-radius: 24px;
+    padding: 28px 24px;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1200px) {
+  .app-root {
+    padding: 40px 0;
+    gap: 40px;
+  }
+  
+  .sidebar, main {
+    border-radius: 36px;
+    padding: 48px 40px;
   }
 }
 
@@ -365,4 +650,67 @@ main {
   pointer-events: none;
   z-index: 0;
   opacity: 0.7;
+}
+
+/* Mobile-specific animations */
+@media (max-width: 768px) {
+  .mobile-content {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .note-card {
+    border: 2px solid #000;
+  }
+  
+  .note-card.selected {
+    border: 3px solid #000;
+  }
+  
+  .theme-toggle-btn {
+    border: 2px solid #000;
+  }
+}
+
+/* Print styles */
+@media print {
+  .mobile-header,
+  .mobile-tabs,
+  .desktop-layout {
+    display: none;
+  }
+  
+  .mobile-content {
+    display: block;
+    padding: 0;
+  }
+  
+  .mobile-notes-section,
+  .mobile-editor-section {
+    background: white;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
 }
