@@ -1,17 +1,17 @@
 {
   "files": {
-    "main.css": "/note-app-clean/static/css/main.5cb54199.css",
-    "main.js": "/note-app-clean/static/js/main.32a9b35f.js",
+    "main.css": "/note-app-clean/static/css/main.a6246d2e.css",
+    "main.js": "/note-app-clean/static/js/main.31598727.js",
+    "static/media/tree.png": "/note-app-clean/static/media/tree.a1be954a07bcd84d348f.png",
     "static/media/background.png": "/note-app-clean/static/media/background.0ca944cce1ee6c3dd003.png",
-    "static/media/tree.png": "/note-app-clean/static/media/tree.126dc5ca5f0794ba75ce.png",
     "static/media/totoro.png": "/note-app-clean/static/media/totoro.9520ff02e750abab2b4b.png",
     "static/media/leaf.png": "/note-app-clean/static/media/leaf.658fe9961b269661e271.png",
     "index.html": "/note-app-clean/index.html",
-    "main.5cb54199.css.map": "/note-app-clean/static/css/main.5cb54199.css.map",
-    "main.32a9b35f.js.map": "/note-app-clean/static/js/main.32a9b35f.js.map"
+    "main.a6246d2e.css.map": "/note-app-clean/static/css/main.a6246d2e.css.map",
+    "main.31598727.js.map": "/note-app-clean/static/js/main.31598727.js.map"
   },
   "entrypoints": [
-    "static/css/main.5cb54199.css",
-    "static/js/main.32a9b35f.js"
+    "static/css/main.a6246d2e.css",
+    "static/js/main.31598727.js"
   ]
 }
